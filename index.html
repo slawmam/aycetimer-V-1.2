@@ -1,105 +1,93 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AYCE Timer</title>
-  <link rel="icon" href="/favicon.ico" />
+  <title>AYCE Timer 90 Menit</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f7f9fc;
+      background: #f4f4f4;
       color: #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: 30px;
+      text-align: center;
+      padding: 20px;
     }
 
     h1 {
-      font-size: 24px;
+      font-size: 28px;
       margin-bottom: 10px;
-      color: #444;
     }
 
-    .info {
-      background: white;
+    .info-box {
+      background: #fff;
       padding: 20px;
+      margin: 0 auto 20px;
+      max-width: 400px;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
-      width: 90%;
-      max-width: 400px;
-      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
 
-    .info p {
-      margin: 6px 0;
-      font-size: 16px;
+    .info-box p {
+      margin: 10px 0;
+      font-size: 18px;
     }
 
-    .timer {
-      font-size: 36px;
+    .countdown {
+      font-size: 48px;
+      margin-top: 10px;
       font-weight: bold;
-      margin: 20px 0;
-      color: #2b7cff;
+      color: #e53935;
     }
 
-    .progress-container {
-      width: 90%;
-      max-width: 400px;
-      height: 20px;
+    #progress-container {
+      width: 100%;
       background-color: #ddd;
+      height: 20px;
       border-radius: 10px;
       overflow: hidden;
-      margin-bottom: 20px;
+      margin-top: 20px;
     }
 
-    .progress-bar {
+    #progress-bar {
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      background-color: #4caf50;
       transition: width 1s linear;
     }
 
     #popup {
-      display: none;
       position: fixed;
-      bottom: 20px;
-      background: #ffeaa7;
-      padding: 15px 20px;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #ffeb3b;
+      padding: 25px 30px;
+      font-size: 18px;
+      border: 2px solid #f44336;
       border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-      font-weight: bold;
-      animation: fadeIn 0.5s ease;
-      z-index: 999;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      z-index: 9999;
+      display: none;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
   </style>
 </head>
 <body>
-  <div class="info">
-    <h1>AYCE Timer - 90 Menit</h1>
-    <p><strong>Meja:</strong> <span id="nomorMeja">-</span></p>
-    <p><strong>Nama:</strong> <span id="namaTamu">-</span></p>
-    <p><strong>Waktu Mulai:</strong> <span id="waktuMulai">-</span></p>
-    <p><strong>Waktu Selesai:</strong> <span id="waktuSelesai">-</span></p>
-    <div class="timer" id="countdown">--:--:--</div>
-    <div class="progress-container">
-      <div class="progress-bar" id="progressBar"></div>
+  <h1>AYCE Timer </h1>
+  <div class="info-box">
+    <p><strong>Nomor Meja:</strong> <span id="meja"></span></p>
+    <p><strong>Nama:</strong> <span id="nama"></span></p>
+    <p><strong>Waktu Mulai:</strong> <span id="waktuMulai"></span></p>
+    <p><strong>Waktu Selesai:</strong> <span id="waktuSelesai"></span></p>
+    <div class="countdown" id="timer">00:00:00</div>
+    <div id="progress-container">
+      <div id="progress-bar"></div>
     </div>
   </div>
 
-  <div id="popup">⏰ Waktu tersisa 5 menit! Mohon bersiap 🙏</div>
+  <div id="popup">⚠️ Waktu tersisa 5 menit!</div>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
   <script>
     const firebaseConfig = {
@@ -115,21 +103,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const tableNumber = urlParams.get("table");
-
-    const namaTamu = document.getElementById("namaTamu");
-    const nomorMeja = document.getElementById("nomorMeja");
-    const waktuMulai = document.getElementById("waktuMulai");
-    const waktuSelesai = document.getElementById("waktuSelesai");
-    const countdown = document.getElementById("countdown");
-    const progressBar = document.getElementById("progressBar");
-
-    let popupShown = false;
-
-    function playSound() {
-      const audio = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
-      audio.play().catch(() => {});
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
     }
 
     function showPopup() {
@@ -139,52 +115,51 @@
       setTimeout(() => popup.style.display = "none", 6000);
     }
 
-    function updateTimer(startTimeStr, endTimeStr) {
-      const startTime = new Date(`1970-01-01T${startTimeStr}`);
-      const endTime = new Date(`1970-01-01T${endTimeStr}`);
-
-      function tick() {
-        const now = new Date();
-        const nowTime = new Date(`1970-01-01T${now.toTimeString().slice(0, 8)}`);
-        const remaining = endTime - nowTime;
-
-        const total = endTime - startTime;
-        const progress = Math.max(0, Math.min(1, 1 - (remaining / total)));
-        progressBar.style.width = (progress * 100).toFixed(2) + "%";
-
-        if (remaining <= 0) {
-          countdown.textContent = "Waktu Habis";
-          progressBar.style.width = "100%";
-        } else {
-          const hrs = Math.floor(remaining / 3600000);
-          const mins = Math.floor((remaining % 3600000) / 60000);
-          const secs = Math.floor((remaining % 60000) / 1000);
-          countdown.textContent = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-
-          // Tampilkan popup jika sisa waktu 5 menit
-          if (remaining <= 5 * 60 * 1000 && !popupShown) {
-            showPopup();
-            popupShown = true;
-          }
-
-          requestAnimationFrame(tick);
-        }
-      }
-
-      tick();
+    function playSound() {
+      const audio = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
+      audio.play().catch(() => {});
     }
 
-    if (tableNumber) {
-      db.ref("meja/" + tableNumber).on("value", (snapshot) => {
+    function startTimer(waktuSelesai) {
+      const totalDuration = 90 * 60; // 90 menit
+      const end = new Date(waktuSelesai).getTime();
+
+      const timerInterval = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = end - now;
+        const seconds = Math.floor(distance / 1000);
+        const progress = Math.max(0, Math.min(1, 1 - seconds / totalDuration));
+        const percent = progress * 100;
+
+        const hrs = String(Math.floor(seconds / 3600)).padStart(2, "0");
+        const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+        const secs = String(seconds % 60).padStart(2, "0");
+
+        document.getElementById("timer").textContent = `${hrs}:${mins}:${secs}`;
+        document.getElementById("progress-bar").style.width = percent + "%";
+
+        if (seconds <= 300 && seconds > 294) {
+          showPopup();
+        }
+
+        if (seconds <= 0) {
+          clearInterval(timerInterval);
+          document.getElementById("timer").textContent = "00:00:00";
+          document.getElementById("progress-bar").style.width = "100%";
+        }
+      }, 1000);
+    }
+
+    const table = getQueryParam("table");
+    if (table) {
+      firebase.database().ref(`meja/${table}`).on("value", (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          nomorMeja.textContent = data.nomor_meja || "-";
-          namaTamu.textContent = data.nama || "-";
-          waktuMulai.textContent = data.waktu_mulai || "-";
-          waktuSelesai.textContent = data.waktu_selesai || "-";
-          if (data.waktu_mulai && data.waktu_selesai) {
-            updateTimer(data.waktu_mulai, data.waktu_selesai);
-          }
+          document.getElementById("meja").textContent = table;
+          document.getElementById("nama").textContent = data.nama || "-";
+          document.getElementById("waktuMulai").textContent = data.mulai || "-";
+          document.getElementById("waktuSelesai").textContent = data.selesai || "-";
+          startTimer(data.selesai);
         }
       });
     }
