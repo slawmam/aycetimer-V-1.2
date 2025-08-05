@@ -4,199 +4,190 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AYCE Timer</title>
+  <link rel="icon" href="/favicon.ico" />
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #ffffff;
-      color: #333;
       margin: 0;
-      padding: 20px;
-      text-align: center;
+      padding: 0;
+      background: #f7f9fc;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 30px;
     }
 
     h1 {
       font-size: 24px;
       margin-bottom: 10px;
+      color: #444;
     }
 
-    .info-container {
-      background: #f9f9f9;
-      padding: 15px;
-      border-radius: 15px;
+    .info {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      display: inline-block;
-      text-align: left;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .info p {
+      margin: 6px 0;
       font-size: 16px;
     }
 
-    .info-container div {
-      margin: 5px 0;
-    }
-
     .timer {
-      font-size: 48px;
+      font-size: 36px;
       font-weight: bold;
-      margin: 30px 0 10px;
-      color: #ff5722;
-      position: relative;
+      margin: 20px 0;
+      color: #2b7cff;
     }
 
-    .progress-ring {
-      position: relative;
-      width: 160px;
-      height: 160px;
-      margin: 0 auto 20px;
+    .progress-container {
+      width: 90%;
+      max-width: 400px;
+      height: 20px;
+      background-color: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 20px;
     }
 
-    .progress-ring circle {
-      fill: none;
-      stroke-width: 10;
-      transform: rotate(-90deg);
-      transform-origin: 50% 50%;
-    }
-
-    .progress-ring-bg {
-      stroke: #ddd;
-    }
-
-    .progress-ring-fg {
-      stroke: #4caf50;
-      transition: stroke-dashoffset 1s linear;
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      transition: width 1s linear;
     }
 
     #popup {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #ffc107;
-      color: #000;
-      padding: 15px 25px;
-      border-radius: 8px;
-      font-weight: bold;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      z-index: 1000;
       display: none;
+      position: fixed;
+      bottom: 20px;
+      background: #ffeaa7;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      font-weight: bold;
+      animation: fadeIn 0.5s ease;
+      z-index: 999;
     }
 
-    @media (max-width: 480px) {
-      .timer {
-        font-size: 36px;
-      }
-      .info-container {
-        font-size: 14px;
-      }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
-
-  <div id="popup">⏰ Sisa waktu tinggal 5 menit!</div>
-
-  <h1>AYCE Timer 90 Menit</h1>
-
-  <div class="info-container" id="tableInfo">
-    <div><strong>Meja:</strong> <span id="tableNumber">-</span></div>
-    <div><strong>Nama:</strong> <span id="customerName">-</span></div>
-    <div><strong>Waktu Mulai:</strong> <span id="startTime">-</span></div>
-    <div><strong>Waktu Selesai:</strong> <span id="endTime">-</span></div>
+  <div class="info">
+    <h1>AYCE Timer - 90 Menit</h1>
+    <p><strong>Meja:</strong> <span id="nomorMeja">-</span></p>
+    <p><strong>Nama:</strong> <span id="namaTamu">-</span></p>
+    <p><strong>Waktu Mulai:</strong> <span id="waktuMulai">-</span></p>
+    <p><strong>Waktu Selesai:</strong> <span id="waktuSelesai">-</span></p>
+    <div class="timer" id="countdown">--:--:--</div>
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
   </div>
 
-  <div class="progress-ring">
-    <svg width="160" height="160">
-      <circle class="progress-ring-bg" cx="80" cy="80" r="70"></circle>
-      <circle class="progress-ring-fg" cx="80" cy="80" r="70" stroke-dasharray="439.6" stroke-dashoffset="0"></circle>
-    </svg>
-    <div class="timer" id="countdown">90:00</div>
-  </div>
+  <div id="popup">⏰ Waktu tersisa 5 menit! Mohon bersiap 🙏</div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-database.js";
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
+  <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyAWNdliJccG3QZJR47pFz75dNhD50wEGPM",
+      apiKey: "AIzaSyAEd0SYvg7_l9tVNYA4v3HkU0D05Eqt8Dc",
       authDomain: "aycetimerpesonamusi.firebaseapp.com",
       databaseURL: "https://aycetimerpesonamusi-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "aycetimerpesonamusi",
       storageBucket: "aycetimerpesonamusi.appspot.com",
-      messagingSenderId: "190415465379",
-      appId: "1:190415465379:web:7df7d4f370c8d70e610816",
-      measurementId: "G-X0JRFG7XLP"
+      messagingSenderId: "760279479394",
+      appId: "1:760279479394:web:5d96ea3c05e58ce059cbcb"
     };
 
-
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
     const urlParams = new URLSearchParams(window.location.search);
-    const table = urlParams.get("table");
+    const tableNumber = urlParams.get("table");
 
-    const tableRef = ref(database, `meja/${table}`);
+    const namaTamu = document.getElementById("namaTamu");
+    const nomorMeja = document.getElementById("nomorMeja");
+    const waktuMulai = document.getElementById("waktuMulai");
+    const waktuSelesai = document.getElementById("waktuSelesai");
+    const countdown = document.getElementById("countdown");
+    const progressBar = document.getElementById("progressBar");
 
-    let countdownElement = document.getElementById("countdown");
-    let circle = document.querySelector(".progress-ring-fg");
-    let totalSeconds = 90 * 60;
     let popupShown = false;
 
-    function updateRing(progress) {
-      const radius = 70;
-      const circumference = 2 * Math.PI * radius;
-      circle.style.strokeDasharray = `${circumference}`;
-      const offset = circumference * (1 - progress);
-      circle.style.strokeDashoffset = offset;
-    }
-
-    function formatTime(seconds) {
-      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-      const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-      return `${m}:${s}`;
-    }
     function playSound() {
-  const audio = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
-  audio.play().catch(() => {}); // Ignore autoplay errors
-}
+      const audio = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
+      audio.play().catch(() => {});
+    }
+
     function showPopup() {
-  const popup = document.getElementById("popup");
-  popup.style.display = "block";
-  playSound(); // ✅ Tambahkan ini
-  setTimeout(() => popup.style.display = "none", 6000);
-}
+      const popup = document.getElementById("popup");
+      popup.style.display = "block";
+      playSound();
+      setTimeout(() => popup.style.display = "none", 6000);
+    }
 
+    function updateTimer(startTimeStr, endTimeStr) {
+      const startTime = new Date(`1970-01-01T${startTimeStr}`);
+      const endTime = new Date(`1970-01-01T${endTimeStr}`);
 
-    onValue(tableRef, (snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
-
-      document.getElementById("tableNumber").textContent = data.nomor || "-";
-      document.getElementById("customerName").textContent = data.nama || "-";
-      document.getElementById("startTime").textContent = data.mulai || "-";
-      document.getElementById("endTime").textContent = data.habis || "-";
-
-      const start = new Date(`1970-01-01T${data.mulai || "00:00"}:00`);
-      const end = new Date(`1970-01-01T${data.habis || "00:00"}:00`);
-
-      function updateTimer() {
+      function tick() {
         const now = new Date();
-        const diff = (end - now);
-        let secondsLeft = Math.max(0, Math.floor(diff / 1000));
-        countdownElement.textContent = formatTime(secondsLeft);
-        updateRing(secondsLeft / totalSeconds);
+        const nowTime = new Date(`1970-01-01T${now.toTimeString().slice(0, 8)}`);
+        const remaining = endTime - nowTime;
 
-        if (secondsLeft === 300 && !popupShown) {
-          showPopup();
-          popupShown = true;
-        }
+        const total = endTime - startTime;
+        const progress = Math.max(0, Math.min(1, 1 - (remaining / total)));
+        progressBar.style.width = (progress * 100).toFixed(2) + "%";
 
-        if (secondsLeft > 0) {
-          requestAnimationFrame(updateTimer);
+        if (remaining <= 0) {
+          countdown.textContent = "Waktu Habis";
+          progressBar.style.width = "100%";
+        } else {
+          const hrs = Math.floor(remaining / 3600000);
+          const mins = Math.floor((remaining % 3600000) / 60000);
+          const secs = Math.floor((remaining % 60000) / 1000);
+          countdown.textContent = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+          // Tampilkan popup jika sisa waktu 5 menit
+          if (remaining <= 5 * 60 * 1000 && !popupShown) {
+            showPopup();
+            popupShown = true;
+          }
+
+          requestAnimationFrame(tick);
         }
-     
       }
 
-      updateTimer();
-    });
+      tick();
+    }
+
+    if (tableNumber) {
+      db.ref("meja/" + tableNumber).on("value", (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          nomorMeja.textContent = data.nomor_meja || "-";
+          namaTamu.textContent = data.nama || "-";
+          waktuMulai.textContent = data.waktu_mulai || "-";
+          waktuSelesai.textContent = data.waktu_selesai || "-";
+          if (data.waktu_mulai && data.waktu_selesai) {
+            updateTimer(data.waktu_mulai, data.waktu_selesai);
+          }
+        }
+      });
+    }
   </script>
 </body>
 </html>
