@@ -147,93 +147,97 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAEd0SYvg7_l9tVNYA4v3HkU0D05Eqt8Dc",
-      authDomain: "aycetimerpesonamusi.firebaseapp.com",
-      databaseURL: "https://aycetimerpesonamusi-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "aycetimerpesonamusi",
-      storageBucket: "aycetimerpesonamusi.appspot.com",
-      messagingSenderId: "760279479394",
-      appId: "1:760279479394:web:5d96ea3c05e58ce059cbcb"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyAEd0SYvg7_l9tVNYA4v3HkU0D05Eqt8Dc",
+    authDomain: "aycetimerpesonamusi.firebaseapp.com",
+    databaseURL: "https://aycetimerpesonamusi-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "aycetimerpesonamusi",
+    storageBucket: "aycetimerpesonamusi.appspot.com",
+    messagingSenderId: "760279479394",
+    appId: "1:760279479394:web:5d96ea3c05e58ce059cbcb"
+  };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    function param(name) {
-      return new URLSearchParams(window.location.search).get(name);
-    }
+  function param(name) {
+    return new URLSearchParams(window.location.search).get(name);
+  }
 
-    let timerInterval = null;
+  let timerInterval = null;
 
-    function playSound() {
-      new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg").play().catch(()=>{});
-    }
+  function playSound() {
+    new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg").play().catch(()=>{});
+  }
 
-    function showPopup() {
-      const p = document.getElementById("popup");
-      p.style.display = "block";
-      playSound();
-      setTimeout(() => p.style.display = "none", 6000);
-    }
+  function showPopup() {
+    const p = document.getElementById("popup");
+    p.style.display = "block";
+    playSound();
+    setTimeout(() => p.style.display = "none", 6000);
+  }
 
-    function startTimer(selesaiStr) {
-      if (timerInterval) clearInterval(timerInterval);
+  function startTimer(selesaiStr) {
+    if (timerInterval) clearInterval(timerInterval);
 
-      const end = new Date(selesaiStr).getTime();
-      const total = 90 * 60;
+    const end = new Date(selesaiStr).getTime();
+    const total = 90 * 60;
 
-      timerInterval = setInterval(() => {
-        const now = Date.now();
-        const diff = Math.floor((end - now) / 1000);
+    timerInterval = setInterval(() => {
+      const now = Date.now();
+      const diff = Math.floor((end - now) / 1000);
 
-        if (diff <= 0) {
-          document.getElementById("timer").textContent = "00:00:00";
-          document.getElementById("progress").style.width = "100%";
-          clearInterval(timerInterval);
-          return;
-        }
+      if (diff <= 0) {
+        document.getElementById("timer").textContent = "00:00:00";
+        document.getElementById("progress").style.width = "100%";
+        clearInterval(timerInterval);
+        return;
+      }
 
-        const h = String(Math.floor(diff / 3600)).padStart(2,"0");
-        const m = String(Math.floor(diff % 3600 / 60)).padStart(2,"0");
-        const s = String(diff % 60).padStart(2,"0");
+      const h = String(Math.floor(diff / 3600)).padStart(2,"0");
+      const m = String(Math.floor(diff % 3600 / 60)).padStart(2,"0");
+      const s = String(diff % 60).padStart(2,"0");
 
-        document.getElementById("timer").textContent = `${h}:${m}:${s}`;
+      document.getElementById("timer").textContent = `${h}:${m}:${s}`;
 
-        const used = total - diff;
-        const persen = Math.min(100, (used / total) * 100);
-        document.getElementById("progress").style.width = persen + "%";
+      const used = total - diff;
+      const persen = Math.min(100, (used / total) * 100);
+      document.getElementById("progress").style.width = persen + "%";
 
-        if (diff <= 300 && diff > 294) showPopup();
+      if (diff <= 300 && diff > 294) showPopup();
 
-      }, 1000);
-    }
+    }, 1000);
+  }
 
-    const meja = param("table");
+  const meja = param("table");
+  const cabang = param("cabang");
 
-    if (!meja) {
-      alert("QR tidak valid!");
-    } else {
-      document.getElementById("meja").textContent = meja;
+  if (!meja || !cabang) {
+    alert("QR tidak valid!");
+  } else {
+    document.getElementById("meja").textContent = meja;
 
-      // ✅ CABANG TETAP DI BACKEND, TIDAK DITAMPILKAN DI UI
-      const cabang = param("cabang") || "Mama Musi Lemabang";
-      const ref = db.ref(`cabang/${cabang}/meja/${meja}`);
+    const ref = db.ref(`cabang/${cabang}/meja/${meja}`);
 
-      ref.on("value", snap => {
-        const data = snap.val();
-        if (!data) return;
+    ref.on("value", snap => {
+      if (!snap.exists()) {
+        document.getElementById("loading").textContent = "Data belum tersedia...";
+        return;
+      }
 
-        document.getElementById("loading").style.display = "none";
+      const data = snap.val();
+      document.getElementById("loading").style.display = "none";
 
-        document.getElementById("nama").textContent = data.nama || "-";
-        document.getElementById("mulai").textContent = data.mulai || "-";
-        document.getElementById("selesai").textContent = data.selesai || "-";
+      document.getElementById("nama").textContent = data.nama || "-";
+      document.getElementById("mulai").textContent = data.mulai || "-";
+      document.getElementById("selesai").textContent = data.selesai || "-";
 
-        if (data.selesai) startTimer(data.selesai);
-      });
-    }
-  </script>
+      if (data.selesai) startTimer(data.selesai);
+    });
+  }
+</script>
+
+
 
 </body>
 </html>
